@@ -4,7 +4,7 @@ Technically a transpiler(?) maybe?
 
 This repo has two C# projects: The compiler and a "Runner" which runs the output of the compiler. The compiler is at the root, and the runner is at ``Runner/``
 
-To simply run your code from a URCL file, use ``run.ps1`` with the single argument of the filename
+To simply run your code from a URCL file, use ``run.ps1``/``run.sh`` with the single argument of the filename
 
 The compiler supports three macros: ``@ASSEMBLY`` for setting the assembly name, ``@TYPE`` for setting the name of the type it will emit, and ``@METHOD`` for setting the name of the method containing the output code. Changing any of these will break the runner, and is only good if you plan on using the output for anything other than running directly.
 
@@ -18,4 +18,4 @@ The only supported word sizes are ``8``, ``16``, ``32``, ``64``. If your ``BITS`
 
 There is mostly no error handling, so if your program is invalid, the result is anywhere from an error message detailing the issue, to an unhandled mystery exception in the compiler, and could even result in compile success, and only erroring when saving the output to disk (this will have a huge call stack and come from ILPack) or even successfully compiling and getting a verification exception at runtime.
 
-The runner requires a conditional compilation symbol of ``I1``, ``I2``, ``I4`` or ``I8`` for the word size. It also optionally takes a ``-d`` argument to print debug output of the program's internal state at the point of reaching a ``HLT`` instruction. ``run.ps1`` will automatically pass both these parameters to the runner.
+The runner requires a conditional compilation symbol of ``I1``, ``I2``, ``I4`` or ``I8`` for the word size. It also optionally takes a ``-d`` argument to print debug output of the program's internal state at the point of reaching a ``HLT`` instruction. ``run.ps1``/``run.sh`` will automatically pass both these parameters to the runner.
