@@ -32,7 +32,7 @@ static void Runner(bool debugState)
     (word[] regs, word[] mem, word sp) = URCL.Execute(new PortImpl());
     if (debugState)
     {
-        Console.WriteLine("---");
+        Console.WriteLine("\n---");
         Console.WriteLine("HLT reached; control returned to Runner");
         if (mem.Length > 0) Console.WriteLine($"SP: {sp}");
         for (var i = 0; i < regs.Length; i++)
