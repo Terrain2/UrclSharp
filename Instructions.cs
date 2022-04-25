@@ -2,7 +2,7 @@ global using EmitLabel = System.Reflection.Emit.Label;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-record EmitContext(ILGenerator IL, uint WordLength, EmitLabel JmpTable, LocalBuilder JmpLocation, LocalBuilder StackPointer, LocalBuilder Memory, uint RegCount, Type Word, Type WordArray, Type WordArray2, MethodInfo ReadPort, MethodInfo WritePort)
+record EmitContext(ILGenerator IL, uint WordLength, EmitLabel JmpTable, LocalBuilder JmpLocation, LocalBuilder StackPointer, LocalBuilder Memory, uint RegCount, Type Word, Type WordArray, Type RetTuple, MethodInfo ReadPort, MethodInfo WritePort)
 {
     public int Index { get; set; }
 
@@ -129,7 +129,8 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                     ctx.EmitStelem();
                 }
                 ctx.IL.Emit(OpCodes.Ldloc, ctx.Memory);
-                ctx.IL.Emit(OpCodes.Newobj, ctx.WordArray2.GetConstructor(new Type[] { ctx.WordArray, ctx.WordArray })!);
+                ctx.IL.Emit(OpCodes.Ldloc, ctx.StackPointer);
+                ctx.IL.Emit(OpCodes.Newobj, ctx.RetTuple.GetConstructor(new Type[] { ctx.WordArray, ctx.WordArray, ctx.Word })!);
                 ctx.IL.Emit(OpCodes.Ret);
                 break;
             case ("IN", [Register Destination, Port Source]):

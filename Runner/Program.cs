@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿#if DEBUG && !(I1 || I2 || I4 || I8)
+#define I8 // debug word size, only necessary to edit if you're actually editing runner
+#endif
 #if I1
 using word = System.Byte;
 using sword = System.SByte;
@@ -11,12 +13,10 @@ using sword = System.Int32;
 #elif I8
 using word = System.UInt64;
 using sword = System.Int64;
-#elif DEBUG
-using word = System.UInt64;
-using sword = System.Int64;
 #else
 #error No word size constant
 #endif
+using System.Reflection;
 
 var asm = Assembly.LoadFile(Path.GetFullPath(args[0]));
 
@@ -25,11 +25,29 @@ AppDomain.CurrentDomain.AssemblyResolve += (_, args) =>
     if (args.Name == "URCL, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null") return asm;
     return null;
 };
-Runner();
+Runner(args.Length > 1 && args[1] == "-d");
 
-static void Runner()
+static void Runner(bool debugState)
 {
-    URCL.Execute(new PortImpl());
+    (word[] regs, word[] mem, word sp) = URCL.Execute(new PortImpl());
+    if (debugState)
+    {
+        Console.WriteLine("---");
+        Console.WriteLine("HLT reached; control returned to Runner");
+        if (mem.Length > 0) Console.WriteLine($"SP: {sp}");
+        for (var i = 0; i < regs.Length; i++)
+        {
+            Console.WriteLine($"${i + 1}: {regs[i]}");
+        }
+        if (mem.Length > 0)
+        {
+            Console.WriteLine($"Memory (length {mem.Length}, in absolute addresses including DWs, idk what heap zero is in absolute terms sorry)");
+            for (var i = 0; i < mem.Length; i++)
+            {
+                Console.WriteLine($"({i}) -> {mem[i]}");
+            }
+        }
+    }
 }
 
 class PortImpl : Port

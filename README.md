@@ -12,6 +12,10 @@ All of the instructions are in ``Instructions.cs``, operand types in ``Operands.
 
 The compiler is allegedly complete with all the instructions as implemented in [URCL v1.3.1](https://github.com/ModPunchtree/URCL/blob/main/Release/URCL%20V1.3.1.pdf). I have not tested all the instructions, and i've mostly only tested it with 64 bit word size.
 
+A ``HLT`` instruction is automatically inserted at the end of the file if it doesn't already have one there. This does not mean it is ever reachable, but you should just know this. That's mainly so you don't have to manually insert one.
+
 The only supported word sizes are ``8``, ``16``, ``32``, ``64``. If your ``BITS`` constraint does not match one of these, the compiler will reject your program.
 
 There is mostly no error handling, so if your program is invalid, the result is anywhere from an error message detailing the issue, to an unhandled mystery exception in the compiler, and could even result in compile success, and only erroring when saving the output to disk (this will have a huge call stack and come from ILPack) or even successfully compiling and getting a verification exception at runtime.
+
+The runner requires a conditional compilation symbol of ``I1``, ``I2``, ``I4`` or ``I8`` for the word size. It also optionally takes a ``-d`` argument to print debug output of the program's internal state at the point of reaching a ``HLT`` instruction. ``run.ps1`` will automatically pass both these parameters to the runner.

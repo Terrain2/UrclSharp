@@ -203,8 +203,8 @@ EmitContext ctx;
     port.CreateType();
 
     type = module.DefineType(TypeName, TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Abstract);
-    var arrWord2 = typeof(Tuple<,>).MakeGenericType(arrWord, arrWord);
-    var method = type.DefineMethod(MethodName, MethodAttributes.Static | MethodAttributes.Public | MethodAttributes.Final, arrWord2, new[] { port });
+    var retTuple = typeof(Tuple<,,>).MakeGenericType(arrWord, arrWord, word);
+    var method = type.DefineMethod(MethodName, MethodAttributes.Static | MethodAttributes.Public | MethodAttributes.Final, retTuple, new[] { port });
     var il = method.GetILGenerator();
     var Memory = il.DeclareLocal(arrWord);
     for (var i = 0; i < Registers; i++) il.DeclareLocal(word);
@@ -212,7 +212,7 @@ EmitContext ctx;
     var SP = il.DeclareLocal(word);
     var JmpTable = il.DefineLabel();
     var JmpLocation = il.DeclareLocal(typeof(int));
-    ctx = new(il, WordLength, JmpTable, JmpLocation, SP, Memory, Registers, word, arrWord, arrWord2, readPort, writePort);
+    ctx = new(il, WordLength, JmpTable, JmpLocation, SP, Memory, Registers, word, arrWord, retTuple, readPort, writePort);
 }
 var FuncStart = ctx.IL.DefineLabel();
 ctx.IL.Emit(OpCodes.Br, FuncStart);
@@ -334,7 +334,7 @@ static IEnumerable<Operand> ParseOperands(string input)
                 yield return new StackPointer();
                 break;
         }
-        throw ErrorAndQuit("Couldn't parse operand, and it's a fucking miracle it even got to this point due to the complete lack of error handling and shits to give.");
+        throw ErrorAndQuit($"Couldn't parse operand. I don't know where in the file the issue lies, but it looks like this: {input}");
     }
 }
 
