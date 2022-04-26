@@ -90,11 +90,11 @@ record EmitContext(ILGenerator IL, uint WordLength, EmitLabel JmpTable, LocalBui
 
     public void EmitBr(OpCode opCode, Value address)
     {
-        if (address is Label label)
+        if (address is Label label) // Optimization: If branching to a label, we can just go directly there without the jump table
         {
             IL.Emit(opCode, label.EmitLabel!.Value);
         }
-        else
+        else // Otherwise, we need to set the jump location for the jump table to read from, and then go to the jump table. This is not significantly slower maybe? at least for small programs idk
         {
             EmitRead(address);
             IL.Emit(OpCodes.Conv_I4);
