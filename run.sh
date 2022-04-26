@@ -7,7 +7,5 @@ if [ BITS != 1 ]; then
         32) I="I4" ;;
         64) I="I8" ;;
     esac
-    cd Runner
-    dotnet run -c Release -p:DefineConstants=$I -- URCL.dll -d
-    cd ..
+    dotnet run --project Runner -c Release -p:DefineConstants=$I -- Runner/URCL.dll -d
 fi

@@ -87,6 +87,21 @@ record EmitContext(ILGenerator IL, uint WordLength, EmitLabel JmpTable, LocalBui
                 }
         }
     }
+
+    public void EmitBr(OpCode opCode, Value address)
+    {
+        if (address is Label label)
+        {
+            IL.Emit(opCode, label.EmitLabel!.Value);
+        }
+        else
+        {
+            EmitRead(address);
+            IL.Emit(OpCodes.Conv_I4);
+            IL.Emit(OpCodes.Stloc, JmpLocation);
+            IL.Emit(opCode, JmpTable);
+        }
+    }
 }
 
 record Instruction(Label? Label, string OpCode, Operand[] Operands)
@@ -366,113 +381,9 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.EmitWrite(Destination);
                 break;
 
-            // Labeled Branches
-            // Optimization: labeled branches need to be before address branches to work
-            // Labels are also Values so if you comment out the labeled branches, they will all be caught by address branches
-            case ("JMP", [Label Destination]):
-                ctx.IL.Emit(OpCodes.Br, Destination.EmitLabel!.Value);
-                break;
-            case ("CAL", [Label Destination]):
-                ctx.IL.Emit(OpCodes.Ldloc, ctx.Memory);
-                ctx.IL.Emit(OpCodes.Ldloc, ctx.StackPointer);
-                ctx.EmitLdc(1);
-                ctx.IL.Emit(OpCodes.Sub);
-                ctx.IL.Emit(OpCodes.Dup);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.StackPointer);
-                ctx.EmitLdc(ctx.Index + 1);
-                ctx.EmitStelem();
-                ctx.IL.Emit(OpCodes.Br, Destination.EmitLabel!.Value);
-                break;
-            case ("BRE", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Beq, Destination.EmitLabel!.Value);
-                break;
-            case ("BNE", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Bne_Un, Destination.EmitLabel!.Value);
-                break;
-            case ("BRG", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Bgt_Un, Destination.EmitLabel!.Value);
-                break;
-            case ("BGE", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Bge_Un, Destination.EmitLabel!.Value);
-                break;
-            case ("BRL", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Blt_Un, Destination.EmitLabel!.Value);
-                break;
-            case ("BLE", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.Emit(OpCodes.Ble_Un, Destination.EmitLabel!.Value);
-                break;
-            case ("BRC", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.BeginExceptionBlock();
-                ctx.IL.Emit(OpCodes.Add_Ovf_Un);
-                ctx.IL.Emit(OpCodes.Pop);
-                ctx.IL.BeginFaultBlock();
-                ctx.IL.Emit(OpCodes.Br, Destination.EmitLabel!.Value);
-                ctx.IL.EndExceptionBlock();
-                break;
-            case ("BNC", [Label Destination, Value Source1, Value Source2]):
-                ctx.EmitRead(Source1);
-                ctx.EmitRead(Source2);
-                ctx.IL.BeginExceptionBlock();
-                ctx.IL.Emit(OpCodes.Add_Ovf_Un);
-                ctx.IL.Emit(OpCodes.Pop);
-                ctx.IL.Emit(OpCodes.Br, Destination.EmitLabel!.Value);
-                ctx.IL.BeginFaultBlock();
-                ctx.IL.EndExceptionBlock();
-                break;
-            case ("BEV", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.EmitLdc(1);
-                ctx.IL.Emit(OpCodes.And);
-                ctx.IL.Emit(OpCodes.Brfalse, Destination.EmitLabel!.Value);
-                break;
-            case ("BOD", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.EmitLdc(1);
-                ctx.IL.Emit(OpCodes.And);
-                ctx.IL.Emit(OpCodes.Brtrue, Destination.EmitLabel!.Value);
-                break;
-            case ("BRZ", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.IL.Emit(OpCodes.Brfalse, Destination.EmitLabel!.Value);
-                break;
-            case ("BNZ", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.IL.Emit(OpCodes.Brtrue, Destination.EmitLabel!.Value);
-                break;
-            case ("BRP", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.EmitLdc(1uL << (int)ctx.WordLength >> 1);
-                ctx.IL.Emit(OpCodes.And);
-                ctx.IL.Emit(OpCodes.Brfalse, Destination.EmitLabel!.Value);
-                break;
-            case ("BRN", [Label Destination, Value Source]):
-                ctx.EmitRead(Source);
-                ctx.EmitLdc(1uL << (int)ctx.WordLength >> 1);
-                ctx.IL.Emit(OpCodes.And);
-                ctx.IL.Emit(OpCodes.Brtrue, Destination.EmitLabel!.Value);
-                break;
-
-            // Address Branches
-            // These branches go to JmpTable and will branch to an "address" which is really just arbitrary and only exists to satisfy URCL
+            // Branches
             case ("JMP", [Value Destination]):
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Br, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Br, Destination);
                 break;
             case ("CAL", [Value Destination]):
                 ctx.IL.Emit(OpCodes.Ldloc, ctx.Memory);
@@ -483,58 +394,37 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.IL.Emit(OpCodes.Stloc, ctx.StackPointer);
                 ctx.EmitLdc(ctx.Index + 1);
                 ctx.EmitStelem();
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Br, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Br, Destination);
                 break;
             case ("BRE", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Beq, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Beq, Destination);
                 break;
             case ("BNE", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Bne_Un, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Bne_Un, Destination);
                 break;
             case ("BRG", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Bgt_Un, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Bgt_Un, Destination);
                 break;
             case ("BGE", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Bge_Un, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Bge_Un, Destination);
                 break;
             case ("BRL", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Blt_Un, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Blt_Un, Destination);
                 break;
             case ("BLE", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Ble_Un, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Ble_Un, Destination);
                 break;
             case ("BRC", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
@@ -543,10 +433,7 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.IL.Emit(OpCodes.Add_Ovf_Un);
                 ctx.IL.Emit(OpCodes.Pop);
                 ctx.IL.BeginFaultBlock();
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Br, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Br, Destination);
                 ctx.IL.EndExceptionBlock();
                 break;
             case ("BNC", [Value Destination, Value Source1, Value Source2]):
@@ -555,10 +442,7 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.IL.BeginExceptionBlock();
                 ctx.IL.Emit(OpCodes.Add_Ovf_Un);
                 ctx.IL.Emit(OpCodes.Pop);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Br, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Br, Destination);
                 ctx.IL.BeginFaultBlock();
                 ctx.IL.EndExceptionBlock();
                 break;
@@ -566,51 +450,33 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.EmitRead(Source);
                 ctx.EmitLdc(1);
                 ctx.IL.Emit(OpCodes.And);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brfalse, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brfalse, Destination);
                 break;
             case ("BOD", [Value Destination, Value Source]):
                 ctx.EmitRead(Source);
                 ctx.EmitLdc(1);
                 ctx.IL.Emit(OpCodes.And);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brtrue, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brtrue, Destination);
                 break;
             case ("BRZ", [Value Destination, Value Source]):
                 ctx.EmitRead(Source);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brfalse, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brfalse, Destination);
                 break;
             case ("BNZ", [Value Destination, Value Source]):
                 ctx.EmitRead(Source);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brtrue, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brtrue, Destination);
                 break;
             case ("BRP", [Value Destination, Value Source]):
                 ctx.EmitRead(Source);
                 ctx.EmitLdc(1uL << (int)ctx.WordLength >> 1);
                 ctx.IL.Emit(OpCodes.And);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brfalse, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brfalse, Destination);
                 break;
             case ("BRN", [Value Destination, Value Source]):
                 ctx.EmitRead(Source);
                 ctx.EmitLdc(1uL << (int)ctx.WordLength >> 1);
                 ctx.IL.Emit(OpCodes.And);
-                ctx.EmitRead(Destination);
-                ctx.IL.Emit(OpCodes.Conv_I4);
-                ctx.IL.Emit(OpCodes.Stloc, ctx.JmpLocation);
-                ctx.IL.Emit(OpCodes.Brtrue, ctx.JmpTable);
+                ctx.EmitBr(OpCodes.Brtrue, Destination);
                 break;
 
             // Non-Branching Comparisons
