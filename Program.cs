@@ -303,7 +303,7 @@ static IEnumerable<Operand> ParseOperands(string input)
                     input = input[i..].TrimStart();
                     continue;
                 }
-            case '&':
+            case '@':
                 {
                     var i = NextWhitespace(input);
                     yield return new ImmediateDef(input[1..i]);

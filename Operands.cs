@@ -47,7 +47,7 @@ record Immediate(ulong Value) : Value
 }
 record ImmediateDef(string Name) : Operand
 {
-    public override string ToString() => $"&{Name}";
+    public override string ToString() => $"@{Name}";
 }
 record Port(string Name) : Operand
 {

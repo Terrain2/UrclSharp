@@ -289,6 +289,12 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.IL.Emit(OpCodes.Div_Un);
                 ctx.EmitWrite(Destination);
                 break;
+            case ("SDIV", [Register Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.IL.Emit(OpCodes.Div);
+                ctx.EmitWrite(Destination);
+                break;
             case ("MOD", [Register Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
@@ -426,6 +432,26 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
                 ctx.EmitRead(Source2);
                 ctx.EmitBr(OpCodes.Ble_Un, Destination);
                 break;
+            case ("SBRG", [Value Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.EmitBr(OpCodes.Bgt, Destination);
+                break;
+            case ("SBGE", [Value Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.EmitBr(OpCodes.Bge, Destination);
+                break;
+            case ("SBRL", [Value Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.EmitBr(OpCodes.Blt, Destination);
+                break;
+            case ("SBLE", [Value Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.EmitBr(OpCodes.Ble, Destination);
+                break;
             case ("BRC", [Value Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
@@ -481,57 +507,78 @@ record Instruction(Label? Label, string OpCode, Operand[] Operands)
 
             // Non-Branching Comparisons
             case ("SETE", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Ceq);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
                 ctx.EmitWrite(Destination);
                 break;
             case ("SETNE", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Ceq);
-                ctx.IL.Emit(OpCodes.Ldc_I4_0);
-                ctx.IL.Emit(OpCodes.Ceq);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.IL.Emit(OpCodes.Not);
                 ctx.EmitWrite(Destination);
                 break;
-            case ("SETLT", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
+            case ("SETL", [Register Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Clt_Un);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
                 ctx.EmitWrite(Destination);
                 break;
             case ("SETLE", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Cgt_Un);
-                ctx.IL.Emit(OpCodes.Ldc_I4_0);
-                ctx.IL.Emit(OpCodes.Ceq);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.IL.Emit(OpCodes.Not);
                 ctx.EmitWrite(Destination);
                 break;
-            case ("SETGT", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
+            case ("SETG", [Register Destination, Value Source1, Value Source2]):
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Cgt_Un);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
                 ctx.EmitWrite(Destination);
                 break;
             case ("SETGE", [Register Destination, Value Source1, Value Source2]):
-                ctx.EmitLdc(unchecked(0uL - 1));
                 ctx.EmitRead(Source1);
                 ctx.EmitRead(Source2);
                 ctx.IL.Emit(OpCodes.Clt_Un);
-                ctx.IL.Emit(OpCodes.Ldc_I4_0);
-                ctx.IL.Emit(OpCodes.Ceq);
-                ctx.IL.Emit(OpCodes.Mul);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.IL.Emit(OpCodes.Not);
+                ctx.EmitWrite(Destination);
+                break;
+            case ("SSETL", [Register Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.IL.Emit(OpCodes.Clt);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.EmitWrite(Destination);
+                break;
+            case ("SSETLE", [Register Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.IL.Emit(OpCodes.Cgt);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.IL.Emit(OpCodes.Not);
+                ctx.EmitWrite(Destination);
+                break;
+            case ("SSETG", [Register Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.IL.Emit(OpCodes.Cgt);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.EmitWrite(Destination);
+                break;
+            case ("SSETGE", [Register Destination, Value Source1, Value Source2]):
+                ctx.EmitRead(Source1);
+                ctx.EmitRead(Source2);
+                ctx.IL.Emit(OpCodes.Clt);
+                ctx.IL.Emit(OpCodes.Neg);
+                ctx.IL.Emit(OpCodes.Not);
                 ctx.EmitWrite(Destination);
                 break;
             case ("SETC", [Register Destination, Value Source1, Value Source2]):
