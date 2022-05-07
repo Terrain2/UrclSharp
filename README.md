@@ -10,7 +10,7 @@ The compiler supports three macros: ``@ASSEMBLY`` for setting the assembly name,
 
 All of the instructions are in ``Instructions.cs``, operand types in ``Operands.cs`` and the rest of the compiler is in ``Program.cs``. All of the ports are individual strings that are passed to the caller at runtime, which the Runner handles. That means all of the ports are implemented in ``Runner/Program.cs`` (this file will contain compile errors because it is built against the compiler output, which is absent from this repo)
 
-The compiler is allegedly complete with all the instructions as implemented in [URCL v1.3.1](https://github.com/ModPunchtree/URCL/blob/main/Release/URCL%20V1.3.1.pdf). I have not tested all the instructions, and i've mostly only tested it with 64 bit word size.
+The compiler is allegedly complete with all the instructions as implemented in [URCL v1.4.0](https://github.com/ModPunchtree/URCL/blob/main/Release/URCL%20V1.4.0.pdf). I have not tested all the instructions, and i've mostly only tested it with 64 bit word size.
 
 A ``HLT`` instruction is automatically inserted at the end of the file if it doesn't already have one there. This does not mean it is ever reachable, but you should just know this. That's mainly so you don't have to manually insert one.
 
